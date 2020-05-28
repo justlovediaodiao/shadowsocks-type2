@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/justlovediaodiao/shadowsocks-type2/http"
 	"github.com/justlovediaodiao/shadowsocks-type2/socks"
 )
 
@@ -23,6 +24,12 @@ func tcpTun(addr, server, target string, shadow func(net.Conn) net.Conn) {
 	}
 	logf("TCP tunnel %s <-> %s <-> %s", addr, server, target)
 	tcpLocal(addr, server, shadow, func(net.Conn) (socks.Addr, error) { return tgt, nil })
+}
+
+// Create a HTTP tunnel listening on addr and proxy to server.
+func httpLocal(addr, server string, shadow func(net.Conn) net.Conn) {
+	logf("HTTP tunnel %s <-> %s", addr, server)
+	tcpLocal(addr, server, shadow, func(c net.Conn) (socks.Addr, error) { return http.Handshake(c) })
 }
 
 // Listen on addr and proxy to server to reach target from getAddr.

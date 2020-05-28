@@ -40,6 +40,7 @@ func main() {
 		UDPSocks   bool
 		Plugin     string
 		PluginOpts string
+		Http       string
 	}
 
 	flag.BoolVar(&config.Verbose, "verbose", false, "verbose mode")
@@ -50,7 +51,8 @@ func main() {
 	flag.StringVar(&flags.Server, "s", "", "server listen address or url")
 	flag.StringVar(&flags.Client, "c", "", "client connect address or url")
 	flag.StringVar(&flags.Socks, "socks", "", "(client-only) SOCKS listen address")
-	flag.BoolVar(&flags.UDPSocks, "u", false, "(client-only) Enable UDP support for SOCKS")
+	flag.BoolVar(&flags.UDPSocks, "u", false, "Enable UDP support for SOCKS or server")
+	flag.StringVar(&flags.Http, "http", "", "(client-only) HTTP tunnel listen address")
 	flag.StringVar(&flags.RedirTCP, "redir", "", "(client-only) redirect TCP from this address")
 	flag.StringVar(&flags.RedirTCP6, "redir6", "", "(client-only) redirect TCP IPv6 from this address")
 	flag.StringVar(&flags.TCPTun, "tcptun", "", "(client-only) TCP tunnel (laddr1=raddr1,laddr2=raddr2,...)")
@@ -130,6 +132,10 @@ func main() {
 			}
 		}
 
+		if flags.Http != "" {
+			go httpLocal(flags.Http, addr, ciph.StreamConn)
+		}
+
 		if flags.RedirTCP != "" {
 			go redirLocal(flags.RedirTCP, addr, ciph.StreamConn)
 		}
@@ -166,7 +172,9 @@ func main() {
 			log.Fatal(err)
 		}
 
-		go udpRemote(udpAddr, ciph.PacketConn)
+		if flags.UDPSocks {
+			go udpRemote(udpAddr, ciph.PacketConn)
+		}
 		go tcpRemote(addr, ciph.StreamConn)
 	}
 
