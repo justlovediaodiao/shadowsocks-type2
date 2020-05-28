@@ -7,7 +7,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/shadowsocks/go-shadowsocks2/internal"
+	"github.com/justlovediaodiao/shadowsocks-type2/internal"
+	"github.com/justlovediaodiao/shadowsocks-type2/type2"
 )
 
 // ErrShortPacket means that the packet is too short for a valid encrypted packet.
@@ -29,13 +30,24 @@ func Pack(dst, plaintext []byte, ciph Cipher) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	var padding = type2.GetPadding(salt, ciph.Key())
+	copy(dst[saltSize:], padding)
+
 	internal.AddSalt(salt)
 
-	if len(dst) < saltSize+len(plaintext)+aead.Overhead() {
+	var timestamp = type2.GetTimestamp()
+	if cap(plaintext) < len(plaintext)+len(timestamp) {
 		return nil, io.ErrShortBuffer
 	}
-	b := aead.Seal(dst[saltSize:saltSize], _zerononce[:aead.NonceSize()], plaintext, nil)
-	return dst[:saltSize+len(b)], nil
+	plaintext = plaintext[:len(timestamp)+len(plaintext)]
+	copy(plaintext[len(timestamp):], plaintext)
+	copy(plaintext, timestamp)
+
+	if len(dst) < saltSize+len(padding)+len(plaintext)+aead.Overhead() {
+		return nil, io.ErrShortBuffer
+	}
+	b := aead.Seal(dst[saltSize+len(padding):saltSize+len(padding)], _zerononce[:aead.NonceSize()], plaintext, nil)
+	return dst[:saltSize+len(padding)+len(b)], nil
 }
 
 // Unpack decrypts pkt using Cipher and returns a slice of dst containing the decrypted payload and any error occurred.
@@ -46,6 +58,11 @@ func Unpack(dst, pkt []byte, ciph Cipher) ([]byte, error) {
 		return nil, ErrShortPacket
 	}
 	salt := pkt[:saltSize]
+	padding, err := type2.ReslovePadding(pkt[saltSize:], salt, ciph.Key())
+	if err != nil {
+		return nil, err
+	}
+
 	if internal.TestSalt(salt) {
 		return nil, ErrRepeatedSalt
 	}
@@ -54,14 +71,19 @@ func Unpack(dst, pkt []byte, ciph Cipher) ([]byte, error) {
 		return nil, err
 	}
 	internal.AddSalt(salt)
-	if len(pkt) < saltSize+aead.Overhead() {
+
+	if len(pkt) < saltSize+len(padding)+aead.Overhead() {
 		return nil, ErrShortPacket
 	}
-	if saltSize+len(dst)+aead.Overhead() < len(pkt) {
+	if saltSize+len(padding)+len(dst)+aead.Overhead() < len(pkt) {
 		return nil, io.ErrShortBuffer
 	}
-	b, err := aead.Open(dst[:0], _zerononce[:aead.NonceSize()], pkt[saltSize:], nil)
-	return b, err
+	b, err := aead.Open(dst[:0], _zerononce[:aead.NonceSize()], pkt[saltSize+len(padding):], nil)
+	_, err = type2.ResloveTimestamp(b)
+	if err != nil {
+		return nil, err
+	}
+	return b[4:], err
 }
 
 type packetConn struct {

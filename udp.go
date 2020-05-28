@@ -7,7 +7,7 @@ import (
 
 	"sync"
 
-	"github.com/shadowsocks/go-shadowsocks2/socks"
+	"github.com/justlovediaodiao/shadowsocks-type2/socks"
 )
 
 type mode int
@@ -44,10 +44,11 @@ func udpLocal(laddr, server, target string, shadow func(net.PacketConn) net.Pack
 
 	nm := newNATmap(config.UDPTimeout)
 	buf := make([]byte, udpBufSize)
-	copy(buf, tgt)
 
 	logf("UDP tunnel %s <-> %s <-> %s", laddr, server, target)
 	for {
+		// buf may be changed, copy tgt every time
+		copy(buf, tgt)
 		n, raddr, err := c.ReadFrom(buf[len(tgt):])
 		if err != nil {
 			logf("UDP local read error: %v", err)

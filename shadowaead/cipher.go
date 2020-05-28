@@ -16,6 +16,7 @@ import (
 var ErrRepeatedSalt = errors.New("repeated salt detected")
 
 type Cipher interface {
+	Key() []byte
 	KeySize() int
 	SaltSize() int
 	Encrypter(salt []byte) (cipher.AEAD, error)
@@ -40,6 +41,7 @@ type metaCipher struct {
 	makeAEAD func(key []byte) (cipher.AEAD, error)
 }
 
+func (a *metaCipher) Key() []byte  { return a.psk }
 func (a *metaCipher) KeySize() int { return len(a.psk) }
 func (a *metaCipher) SaltSize() int {
 	if ks := a.KeySize(); ks > 16 {

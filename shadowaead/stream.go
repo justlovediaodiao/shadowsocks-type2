@@ -7,7 +7,9 @@ import (
 	"io"
 	"net"
 
-	"github.com/shadowsocks/go-shadowsocks2/internal"
+	"github.com/justlovediaodiao/shadowsocks-type2/type2"
+
+	"github.com/justlovediaodiao/shadowsocks-type2/internal"
 )
 
 // payloadSizeMask is the maximum size of payload in bytes.
@@ -205,6 +207,9 @@ func (c *streamConn) initReader() error {
 	if _, err := io.ReadFull(c.Conn, salt); err != nil {
 		return err
 	}
+	if err := type2.ReadPadding(c.Conn, salt, c.Key()); err != nil {
+		return err
+	}
 	if internal.TestSalt(salt) {
 		return ErrRepeatedSalt
 	}
@@ -215,6 +220,10 @@ func (c *streamConn) initReader() error {
 	internal.AddSalt(salt)
 
 	c.r = newReader(c.Conn, aead)
+	_, err = type2.ReadTimestamp(c.r)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -249,8 +258,17 @@ func (c *streamConn) initWriter() error {
 	if err != nil {
 		return err
 	}
+	err = type2.WritePadding(c.Conn, salt, c.Key())
+	if err != nil {
+		return err
+	}
 	internal.AddSalt(salt)
+
 	c.w = newWriter(c.Conn, aead)
+	err = type2.WriteTimestamp(c.w)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

@@ -1,11 +1,13 @@
-# go-shadowsocks2
+# shadowsocks-type2
 
-A fresh implementation of Shadowsocks in Go.
+A revised protocol implementation of [Shadowsocks in Go](https://github.com/shadowsocks/go-shadowsocks2).
 
 GoDoc at https://godoc.org/github.com/shadowsocks/go-shadowsocks2/
 
-![Build and test](https://github.com/shadowsocks/go-shadowsocks2/workflows/Build%20and%20test/badge.svg)
 
+## Protocol
+
+The protocol has been revised to defend detection and is not compatible with the original shadowsocks. See https://github.com/justlovediaodiao/shadowsocks-type2/blob/master/protocol.md
 
 ## Features
 
@@ -15,17 +17,17 @@ GoDoc at https://godoc.org/github.com/shadowsocks/go-shadowsocks2/
 - [x] UDP tunneling (e.g. relay DNS packets)
 - [x] TCP tunneling (e.g. benchmark with iperf3)
 - [x] SIP003 plugins
-- [x] Replay attack mitigation
+- [x] Replay attack defend
 
 
 ## Install
 
-Pre-built binaries for common platforms are available at https://github.com/shadowsocks/go-shadowsocks2/releases
+Pre-built binaries for common platforms are available at https://github.com/justlovediaodiao/shadowsocks-type2/releases
 
 Install from source
 
 ```sh
-go get -u -v github.com/shadowsocks/go-shadowsocks2
+go get -u -v github.com/justlovediaodiao/shadowsocks-type2
 ```
 
 
@@ -121,19 +123,10 @@ It will look for the plugin in the current directory first, then `$PATH`.
 
 UDP connections will not be affected by SIP003.
 
-### Replay Attack Mitigation
+### Replay Attack Defend
 
-By default a [Bloom filter](https://en.wikipedia.org/wiki/Bloom_filter) is deployed to defend against [replay attacks](https://en.wikipedia.org/wiki/Replay_attack).
-Use the following environment variables to fine-tune the mechanism:
-
-- `SHADOWSOCKS_SF_CAPACITY`: Number of recent connections to track. Default `1e6` (one million). Setting it to 0 disables the feature.
-- `SHADOWSOCKS_SF_FPR`: False positive rate of the Bloom filter. Default `1e-6` (0.0001%). This should be enough for most cases.
-- `SHADOWSOCKS_SF_SLOT`: The Bloom filter is divided into a number (default `10`) of slots. When the Bloom filter is full, the
-  oldest slot will be cleared for recycling. In general you should not change this number unless you understand what you are doing.
-
-```sh
-SHADOWSOCKS_SF_CAPACITY=1e6 SHADOWSOCKS_SF_FPR=1e-6 SHADOWSOCKS_SF_SLOT=10 go-shadowsocks2 ...
-```
+The revised protocol can completely defend against [replay attacks](https://en.wikipedia.org/wiki/Replay_attack).  
+The original shadowsocks [Replay Attack Mitigation](https://github.com/shadowsocks/go-shadowsocks2#replay-attack-mitigation) configuration is no longer needed.
 
 ## Design Principles
 

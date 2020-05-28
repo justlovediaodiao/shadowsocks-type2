@@ -1,4 +1,4 @@
-NAME=shadowsocks2
+NAME=shadowsocks-type2
 BINDIR=bin
 GOBUILD=CGO_ENABLED=0 go build -ldflags '-w -s'
 # The -w and -s flags reduce binary sizes by excluding unnecessary symbols and debug info

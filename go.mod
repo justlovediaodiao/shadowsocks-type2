@@ -1,6 +1,6 @@
-module github.com/shadowsocks/go-shadowsocks2
+module github.com/justlovediaodiao/shadowsocks-type2
 
-go 1.12
+go 1.13
 
 require (
 	github.com/riobard/go-bloom v0.0.0-20200213042214-218e1707c495
