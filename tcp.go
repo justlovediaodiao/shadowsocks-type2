@@ -12,7 +12,10 @@ import (
 // Create a SOCKS server listening on addr and proxy to server.
 func socksLocal(addr, server string, shadow func(net.Conn) net.Conn) {
 	logf("SOCKS proxy %s <-> %s", addr, server)
-	tcpLocal(addr, server, shadow, func(c net.Conn) (socks.Addr, error) { return socks.Handshake(c) })
+	tcpLocal(addr, server, shadow, func(c net.Conn) (socks.Addr, net.Conn, error) {
+		addr, err := socks.Handshake(c)
+		return addr, nil, err
+	})
 }
 
 // Create a TCP tunnel from addr to target via server.
@@ -23,17 +26,17 @@ func tcpTun(addr, server, target string, shadow func(net.Conn) net.Conn) {
 		return
 	}
 	logf("TCP tunnel %s <-> %s <-> %s", addr, server, target)
-	tcpLocal(addr, server, shadow, func(net.Conn) (socks.Addr, error) { return tgt, nil })
+	tcpLocal(addr, server, shadow, func(net.Conn) (socks.Addr, net.Conn, error) { return tgt, nil, nil })
 }
 
-// Create a HTTP tunnel listening on addr and proxy to server.
+// Create a HTTP proxy listening on addr and proxy to server.
 func httpLocal(addr, server string, shadow func(net.Conn) net.Conn) {
-	logf("HTTP tunnel %s <-> %s", addr, server)
-	tcpLocal(addr, server, shadow, func(c net.Conn) (socks.Addr, error) { return http.Handshake(c) })
+	logf("HTTP proxy %s <-> %s", addr, server)
+	tcpLocal(addr, server, shadow, http.Handshake)
 }
 
 // Listen on addr and proxy to server to reach target from getAddr.
-func tcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, error)) {
+func tcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(net.Conn) (socks.Addr, net.Conn, error)) {
 	l, err := net.Listen("tcp", addr)
 	if err != nil {
 		logf("failed to listen on %s: %v", addr, err)
@@ -50,7 +53,10 @@ func tcpLocal(addr, server string, shadow func(net.Conn) net.Conn, getAddr func(
 		go func() {
 			defer c.Close()
 			c.(*net.TCPConn).SetKeepAlive(true)
-			tgt, err := getAddr(c)
+			tgt, cc, err := getAddr(c)
+			if cc != nil {
+				c = cc
+			}
 			if err != nil {
 
 				// UDP: keep the connection until disconnect then free the UDP socket

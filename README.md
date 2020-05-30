@@ -12,6 +12,7 @@ The protocol has been revised to defend detection and is not compatible with the
 ## Features
 
 - [x] SOCKS5 proxy with UDP Associate
+- [x] HTTP proxy
 - [x] Support for Netfilter TCP redirect on Linux (IPv6 should work but not tested)
 - [x] Support for Packet Filter TCP redirect on MacOS/Darwin (IPv4 only)
 - [x] UDP tunneling (e.g. relay DNS packets)

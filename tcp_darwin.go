@@ -8,7 +8,10 @@ import (
 )
 
 func redirLocal(addr, server string, shadow func(net.Conn) net.Conn) {
-	tcpLocal(addr, server, shadow, natLookup)
+	tcpLocal(addr, server, shadow, func(c net.Conn) (socks.Addr, net.Conn, error) {
+		addr, err := natLookup(c)
+		return addr, nil, err
+	})
 }
 
 func redir6Local(addr, server string, shadow func(net.Conn) net.Conn) {
