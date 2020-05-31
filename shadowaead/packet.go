@@ -31,23 +31,21 @@ func Pack(dst, plaintext []byte, ciph Cipher) ([]byte, error) {
 		return nil, err
 	}
 	var padding = type2.GetPadding(salt, ciph.Key())
+	var paddingSize = len(padding)
 	copy(dst[saltSize:], padding)
 
 	internal.AddSalt(salt)
 
 	var timestamp = type2.GetTimestamp()
-	if cap(plaintext) < len(plaintext)+len(timestamp) {
+	copy(dst[saltSize+paddingSize:], timestamp)
+	if len(dst) < saltSize+paddingSize+len(timestamp)+len(plaintext)+aead.Overhead() {
 		return nil, io.ErrShortBuffer
 	}
-	plaintext = plaintext[:len(timestamp)+len(plaintext)]
-	copy(plaintext[len(timestamp):], plaintext)
-	copy(plaintext, timestamp)
+	copy(dst[saltSize+paddingSize+len(timestamp):], plaintext)
+	plaintext = dst[saltSize+paddingSize : saltSize+paddingSize+len(timestamp)+len(plaintext)]
 
-	if len(dst) < saltSize+len(padding)+len(plaintext)+aead.Overhead() {
-		return nil, io.ErrShortBuffer
-	}
-	b := aead.Seal(dst[saltSize+len(padding):saltSize+len(padding)], _zerononce[:aead.NonceSize()], plaintext, nil)
-	return dst[:saltSize+len(padding)+len(b)], nil
+	b := aead.Seal(dst[saltSize+paddingSize:saltSize+paddingSize], _zerononce[:aead.NonceSize()], plaintext, nil)
+	return dst[:saltSize+paddingSize+len(b)], nil
 }
 
 // Unpack decrypts pkt using Cipher and returns a slice of dst containing the decrypted payload and any error occurred.
@@ -62,6 +60,7 @@ func Unpack(dst, pkt []byte, ciph Cipher) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	var paddingSize = len(padding)
 
 	if internal.TestSalt(salt) {
 		return nil, ErrRepeatedSalt
@@ -72,13 +71,13 @@ func Unpack(dst, pkt []byte, ciph Cipher) ([]byte, error) {
 	}
 	internal.AddSalt(salt)
 
-	if len(pkt) < saltSize+len(padding)+aead.Overhead() {
+	if len(pkt) < saltSize+paddingSize+aead.Overhead() {
 		return nil, ErrShortPacket
 	}
-	if saltSize+len(padding)+len(dst)+aead.Overhead() < len(pkt) {
+	if saltSize+paddingSize+len(dst)+aead.Overhead() < len(pkt) {
 		return nil, io.ErrShortBuffer
 	}
-	b, err := aead.Open(dst[:0], _zerononce[:aead.NonceSize()], pkt[saltSize+len(padding):], nil)
+	b, err := aead.Open(dst[saltSize+paddingSize:saltSize+paddingSize], _zerononce[:aead.NonceSize()], pkt[saltSize+paddingSize:], nil)
 	_, err = type2.ResloveTimestamp(b)
 	if err != nil {
 		return nil, err
@@ -117,7 +116,7 @@ func (c *packetConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	if err != nil {
 		return n, addr, err
 	}
-	bb, err := Unpack(b[c.Cipher.SaltSize():], b[:n], c)
+	bb, err := Unpack(b, b[:n], c)
 	if err != nil {
 		return n, addr, err
 	}
