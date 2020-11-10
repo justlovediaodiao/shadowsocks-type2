@@ -133,7 +133,7 @@ func main() {
 		if flags.Socks != "" {
 			socks.UDPEnabled = flags.UDPSocks
 			go socksLocal(flags.Socks, addr, ciph.StreamConn)
-			if flags.UDP {
+			if flags.UDPSocks {
 				go udpSocksLocal(flags.Socks, udpAddr, ciph.PacketConn)
 			}
 		}
@@ -178,7 +178,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		if flags.UDPSocks {
+		if flags.UDP {
 			go udpRemote(udpAddr, ciph.PacketConn)
 		}
 		if flags.TCP {
