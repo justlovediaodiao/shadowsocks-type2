@@ -21,6 +21,7 @@ import (
 var config struct {
 	Verbose    bool
 	UDPTimeout time.Duration
+	TCPCork    bool
 }
 
 func main() {
@@ -38,6 +39,8 @@ func main() {
 		TCPTun     string
 		UDPTun     string
 		UDPSocks   bool
+		UDP        bool
+		TCP        bool
 		Plugin     string
 		PluginOpts string
 		Http       string
@@ -51,7 +54,7 @@ func main() {
 	flag.StringVar(&flags.Server, "s", "", "server listen address or url")
 	flag.StringVar(&flags.Client, "c", "", "client connect address or url")
 	flag.StringVar(&flags.Socks, "socks", "", "(client-only) SOCKS listen address")
-	flag.BoolVar(&flags.UDPSocks, "u", false, "Enable UDP support for SOCKS or server")
+	flag.BoolVar(&flags.UDPSocks, "u", false, "(client-only) Enable UDP support for SOCKS")
 	flag.StringVar(&flags.Http, "http", "", "(client-only) HTTP tunnel listen address")
 	flag.StringVar(&flags.RedirTCP, "redir", "", "(client-only) redirect TCP from this address")
 	flag.StringVar(&flags.RedirTCP6, "redir6", "", "(client-only) redirect TCP IPv6 from this address")
@@ -59,6 +62,9 @@ func main() {
 	flag.StringVar(&flags.UDPTun, "udptun", "", "(client-only) UDP tunnel (laddr1=raddr1,laddr2=raddr2,...)")
 	flag.StringVar(&flags.Plugin, "plugin", "", "Enable SIP003 plugin. (e.g., v2ray-plugin)")
 	flag.StringVar(&flags.PluginOpts, "plugin-opts", "", "Set SIP003 plugin options. (e.g., \"server;tls;host=mydomain.me\")")
+	flag.BoolVar(&flags.UDP, "udp", false, "(server-only) enable UDP support")
+	flag.BoolVar(&flags.TCP, "tcp", true, "(server-only) enable TCP support")
+	flag.BoolVar(&config.TCPCork, "tcpcork", false, "coalesce writing first few packets")
 	flag.DurationVar(&config.UDPTimeout, "udptimeout", 5*time.Minute, "UDP tunnel timeout")
 	flag.Parse()
 
@@ -127,7 +133,7 @@ func main() {
 		if flags.Socks != "" {
 			socks.UDPEnabled = flags.UDPSocks
 			go socksLocal(flags.Socks, addr, ciph.StreamConn)
-			if flags.UDPSocks {
+			if flags.UDP {
 				go udpSocksLocal(flags.Socks, udpAddr, ciph.PacketConn)
 			}
 		}
@@ -175,7 +181,9 @@ func main() {
 		if flags.UDPSocks {
 			go udpRemote(udpAddr, ciph.PacketConn)
 		}
-		go tcpRemote(addr, ciph.StreamConn)
+		if flags.TCP {
+			go tcpRemote(addr, ciph.StreamConn)
+		}
 	}
 
 	sigCh := make(chan os.Signal, 1)

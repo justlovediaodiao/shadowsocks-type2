@@ -2,7 +2,9 @@
 
 package main
 
-import "net"
+import (
+	"net"
+)
 
 func redirLocal(addr, server string, shadow func(net.Conn) net.Conn) {
 	logf("TCP redirect not supported")
