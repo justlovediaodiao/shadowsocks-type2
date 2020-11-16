@@ -4,10 +4,11 @@ A revised protocol implementation of [Shadowsocks in Go](https://github.com/shad
 
 GoDoc at https://godoc.org/github.com/shadowsocks/go-shadowsocks2/
 
+![Build and test](https://github.com/justlovediaodiao/shadowsocks-type2/workflows/Build%20and%20test/badge.svg)
 
 ## Protocol
 
-The protocol has been revised to defend detection and is not compatible with the original shadowsocks. See https://github.com/justlovediaodiao/shadowsocks-type2/blob/master/protocol.md
+The protocol has been revised to defend detection and is not compatible with the original shadowsocks. See [Protocol](https://github.com/justlovediaodiao/shadowsocks-type2/blob/master/protocol.md).
 
 ## Features
 
