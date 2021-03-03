@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
-	"time"
-
 	"sync"
+	"time"
 
 	"github.com/justlovediaodiao/shadowsocks-type2/socks"
 )
