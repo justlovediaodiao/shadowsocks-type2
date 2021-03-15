@@ -62,14 +62,13 @@ func Unpack(dst, pkt []byte, ciph Cipher) ([]byte, error) {
 	}
 	var paddingSize = len(padding)
 
-	if internal.TestSalt(salt) {
+	if internal.CheckSalt(salt) {
 		return nil, ErrRepeatedSalt
 	}
 	aead, err := ciph.Decrypter(salt)
 	if err != nil {
 		return nil, err
 	}
-	internal.AddSalt(salt)
 
 	if len(pkt) < saltSize+paddingSize+aead.Overhead() {
 		return nil, ErrShortPacket

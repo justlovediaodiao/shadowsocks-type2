@@ -210,14 +210,13 @@ func (c *streamConn) initReader() error {
 	if err := type2.ReadPadding(c.Conn, salt, c.Key()); err != nil {
 		return err
 	}
-	if internal.TestSalt(salt) {
+	if internal.CheckSalt(salt) {
 		return ErrRepeatedSalt
 	}
 	aead, err := c.Decrypter(salt)
 	if err != nil {
 		return err
 	}
-	internal.AddSalt(salt)
 
 	c.r = newReader(c.Conn, aead)
 	_, err = type2.ReadTimestamp(c.r)
