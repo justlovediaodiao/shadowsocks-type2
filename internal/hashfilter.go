@@ -33,6 +33,22 @@ func (r HashFilter) Add(b []byte) {
 	}
 }
 
+func (r HashFilter) Check(b []byte) bool {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	var v = hex.EncodeToString(b)
+	if _, ok := r.m[v]; ok {
+		return true
+	}
+	var timestamp = time.Now().Unix()
+	r.m[v] = timestamp
+	// clear old key
+	if len(r.m) >= mapLen {
+		r.clear(timestamp)
+	}
+	return false
+}
+
 func (r HashFilter) clear(timestamp int64) {
 	// clear salts from 6 minutes ago, must be longer than timestamp_valid_range * 2
 	timestamp -= 360

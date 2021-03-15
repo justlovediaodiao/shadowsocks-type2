@@ -17,3 +17,8 @@ func TestSalt(b []byte) bool {
 func AddSalt(b []byte) {
 	saltfilter.Add(b)
 }
+
+// CheckSalt returns true and add to filter if salt is repeated
+func CheckSalt(b []byte) bool {
+	return saltfilter.Test(b)
+}
