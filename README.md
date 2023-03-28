@@ -24,12 +24,11 @@ The protocol has been revised to defend detection and is not compatible with the
 
 ## Install
 
-Pre-built binaries for common platforms are available at https://github.com/justlovediaodiao/shadowsocks-type2/releases
 
 Install from source
 
 ```sh
-go get -u -v github.com/justlovediaodiao/shadowsocks-type2
+go install -u github.com/justlovediaodiao/shadowsocks-type2@latest
 ```
 
 
